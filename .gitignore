@@ -1,0 +1,24 @@
+# Kredensial & cache Cloudflare — JANGAN pernah masuk repo publik.
+# Isinya account ID + email akun.
+.wrangler/
+
+# Catatan internal: berisi path lokal PC, langkah deploy, dan alasan bisnis.
+# Bukan rahasia berbahaya, tapi tidak ada gunanya buat orang lain.
+HANDOFF.md
+
+# Hasil build, dibuat ulang lewat: node tools/build-dist.js
+dist/
+
+# Sampah OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Kalau nanti ada dependency
+node_modules/
+*.log

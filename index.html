@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="id" data-tema="gelap">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Terusin — jangan sampai putus</title>
+<meta name="description" content="Pencatat kebiasaan yang benang harinya nyambung. Bikin dengan satu ketikan, tandai hari mana saja, susun jadi rutinitas.">
+<meta name="theme-color" content="#17150F">
+<meta name="color-scheme" content="dark light">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wdth,wght@75..112.5,300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<a class="lompat" href="#daftar">Lompat ke daftar kebiasaan</a>
+
+<header class="atas">
+  <div class="merek">
+    <svg class="merek__g" viewBox="0 0 44 16" aria-hidden="true">
+      <rect x="0" y="2" width="28" height="12" rx="3"/>
+      <rect x="32" y="2" width="12" height="12" rx="3" opacity=".32"/>
+    </svg>
+    <span class="merek__t">Terusin</span>
+  </div>
+  <div class="atas__aksi">
+    <button type="button" class="ikon" id="bTema" aria-label="Ganti tema"></button>
+    <button type="button" class="ikon" id="bSetel" aria-label="Buka pengaturan" aria-expanded="false">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14"/><circle cx="7" cy="6" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="7" cy="14" r="2"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="isi">
+
+  <p class="tgl" id="tgl"></p>
+  <h1 class="judul" id="judul">Terusin</h1>
+  <p class="sub" id="sub"></p>
+
+  <form class="tambah" id="fTambah" autocomplete="off">
+    <input class="tambah__in" id="iNama" maxlength="48" placeholder="Tulis kebiasaan, terus Enter" aria-label="Nama kebiasaan baru">
+    <button class="tambah__ok" type="submit" aria-label="Tambah kebiasaan">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+    </button>
+  </form>
+  <p class="galat" id="galat" role="alert" hidden></p>
+
+  <div class="daftar" id="daftar"></div>
+
+  <section class="arsip" id="arsipBlok" hidden>
+    <button type="button" class="arsip__buka" id="bArsip" aria-expanded="false" aria-controls="arsipIsi">
+      <span id="arsipHitung"></span>
+      <svg class="arsip__panah" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 8l4 4 4-4"/></svg>
+    </button>
+    <div class="arsip__isi" id="arsipIsi" hidden></div>
+  </section>
+
+  <footer class="kaki">
+    <span id="rekap"></span>
+    <span class="kaki__sep" aria-hidden="true">·</span>
+    <a href="https://instagram.com/alfindigital" target="_blank" rel="noopener noreferrer">@alfindigital</a>
+  </footer>
+
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet__tirai" id="sheetTirai"></div>
+  <div class="sheet__kotak" role="dialog" aria-modal="true" aria-labelledby="sheetJudul">
+    <div class="sheet__pegang" aria-hidden="true"></div>
+    <h2 class="sheet__judul" id="sheetJudul">Pengaturan</h2>
+
+    <div class="baris">
+      <div class="baris__t"><b>Tema</b><span>Ikut sistem, atau paksa terang / gelap</span></div>
+      <div class="segmen" role="radiogroup" aria-label="Tema">
+        <button type="button" data-tema="sistem" role="radio" aria-checked="false">Sistem</button>
+        <button type="button" data-tema="terang" role="radio" aria-checked="false">Terang</button>
+        <button type="button" data-tema="gelap" role="radio" aria-checked="true">Gelap</button>
+      </div>
+    </div>
+
+    <div class="baris">
+      <div class="baris__t"><b>Data kamu</b><span>Semua di HP ini, tanpa akun, tanpa server</span></div>
+      <div class="baris__tombol">
+        <button type="button" class="tbl" id="bEkspor">Simpan ke file</button>
+        <button type="button" class="tbl" id="bImpor">Muat dari file</button>
+        <input type="file" id="iFile" accept="application/json,.json" hidden>
+      </div>
+    </div>
+
+    <div class="baris">
+      <div class="baris__t"><b>Mulai dari nol</b><span>Semua kebiasaan dan riwayatnya hilang</span></div>
+      <div class="baris__tombol">
+        <button type="button" class="tbl -bahaya" id="bReset">Hapus semua</button>
+      </div>
+    </div>
+
+    <p class="sheet__versi" id="sheetVersi"></p>
+    <button type="button" class="tbl -lebar" id="bTutupSheet">Tutup</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span id="toastT"></span>
+  <button type="button" id="toastB" hidden></button>
+</div>
+
+<template id="tplKartu">
+  <article class="kartu">
+    <div class="kartu__atas">
+      <button type="button" class="pegang" aria-label="Pindah urutan"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5" r="1.4"/><circle cx="12.5" cy="5" r="1.4"/><circle cx="7.5" cy="10" r="1.4"/><circle cx="12.5" cy="10" r="1.4"/><circle cx="7.5" cy="15" r="1.4"/><circle cx="12.5" cy="15" r="1.4"/></svg></button>
+      <div class="kartu__nama">
+        <h2 class="nama"></h2>
+        <p class="kartu__stat"></p>
+      </div>
+      <button type="button" class="ikon -kecil kartu__menu" aria-label="Aksi lain" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4.5" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="10" cy="15.5" r="1.5"/></svg></button>
+    </div>
+    <div class="kartu__aksi" hidden></div>
+    <div class="hari" aria-hidden="true"></div>
+    <div class="petak" role="group"></div>
+  </article>
+</template>
+
+<script src="js/app.js?v=2"></script>
+</body>
+</html>
