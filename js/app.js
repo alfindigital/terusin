@@ -114,9 +114,6 @@ function pulihkan(arr) {
   });
   return keluar;
 }
-function sah(h) {
-  return h && typeof h.id === 'string' && typeof h.nama === 'string' && h.log && typeof h.log === 'object';
-}
 function simpan() {
   try { localStorage.setItem(KUNCI, JSON.stringify({ v: 1, habit: S.habit, tema: S.tema })); }
   catch (e) { pesan('Penyimpanan penuh, perubahan terakhir nggak ikut tersimpan'); }
@@ -761,19 +758,16 @@ function impor(file) {
       var d = JSON.parse(r.result);
       var arr = Array.isArray(d) ? d : d.habit;
       if (!Array.isArray(arr)) throw new Error('bentuk salah');
-      var bersih = arr.filter(sah);
+      /* WAJIB lewat pulihkan(), jangan disanitasi sendiri di sini. File impor
+         datang dari luar, jadi ini permukaan serang: warna bisa berisi
+         'javascript:...', kunci log bisa berisi tag HTML, dan 'setelah' bisa
+         menunjuk hantu atau bikin rantai muter. pulihkan() sudah menangani
+         semua itu plus id kembar. Dulu di sini pakai filter+map manual dan
+         semua pemeriksaan itu terlewat. */
+      var bersih = pulihkan(arr);
       if (!bersih.length) throw new Error('kosong');
       var lama = S.habit;
-      S.habit = bersih.map(function (h) {
-        return {
-          id: h.id, nama: String(h.nama).slice(0, 48),
-          warna: h.warna || WARNA[0].id,
-          setelah: h.setelah || null,
-          arsip: !!h.arsip,
-          mulai: h.mulai || null,
-          log: h.log || {}
-        };
-      });
+      S.habit = bersih;
       simpan(); gambar();
       pesan(bersih.length + ' kebiasaan dimuat', {
         label: 'Batal',
