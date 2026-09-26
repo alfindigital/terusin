@@ -1,11 +1,11 @@
 /* Service worker Terusin. App shell cache-first, font stale-while-revalidate. */
-var CACHE = 'terusin-v5';
+var CACHE = 'terusin-v6';
 var SHELL = [
   './',
   'index.html',
-  'css/style.css?v=5',
-  'js/core.js?v=5',
-  'js/app.js?v=5',
+  'css/style.css?v=6',
+  'js/core.js?v=6',
+  'js/app.js?v=6',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -78,6 +78,21 @@ self.addEventListener('fetch', function (e) {
 
 /* Pengingat harian saat app tertutup — hanya jalan di Chromium (Android).
    iOS belum dukung periodicSync; di sana pengingat dicek app.js saat dibuka. */
+/* Notifikasi diketuk: fokus window yang sudah ada + suruh app sorot kartunya,
+   atau buka app langsung ke '#k-<id>' kalau belum kebuka. */
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var habit = e.notification.data && e.notification.data.habit;
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
+    if (cs.length) {
+      return cs[0].focus().then(function () {
+        cs[0].postMessage({ tipe: 'fokusHabit', habit: habit || null });
+      });
+    }
+    return clients.openWindow(habit ? './#k-' + habit : './');
+  }));
+});
+
 self.addEventListener('periodicsync', function (e) {
   if (e.tag !== 'ingatkan') return;
   e.waitUntil(self.registration.showNotification('Terusin', {

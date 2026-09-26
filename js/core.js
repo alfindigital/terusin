@@ -80,6 +80,10 @@ function pulihkan(arr) {
       setelah: typeof h.setelah === 'string' ? h.setelah : null,
       arsip: !!h.arsip,
       mulai: /^\d{4}-\d{2}-\d{2}$/.test(h.mulai) ? h.mulai : (Object.keys(log).sort()[0] || kini()),
+      /* pengingat per habit: jam 'HH:MM' ketat, dan tanggal notif terakhir
+         biar dedup sekali-sehari tetap hidup setelah reload */ 
+      ingat: /^([01]\d|2[0-3]):[0-5]\d$/.test(h.ingat || '') ? h.ingat : null,
+      ingatTerakhir: /^\d{4}-\d{2}-\d{2}$/.test(h.ingatTerakhir || '') ? h.ingatTerakhir : null,
       log: log
     });
   }
@@ -121,6 +125,41 @@ function rekor(h) {
 }
 function total(h) { return Object.keys(h.log).length; }
 
+/* Statistik satu kebiasaan: total, runtun, rekor, persen beres dalam jendela
+   30 hari (dihitung sejak `mulai`, bukan 30 hari penuh, supaya habit baru
+   nggak kelihatan jeblok), plus hari-dalam-pekan yang paling sering bolong
+   — rasio isi/peluang per Senin..Minggu. Itu yang menjawab "kenapa selalu
+   gagal di hari X". Semua dari data lokal, nol request. */
+function statistik(h) {
+  var k = kini();
+  var awal = /^\d{4}-\d{2}-\d{2}$/.test(h.mulai || '') && jarak(h.mulai, k) >= 0
+    ? h.mulai : k;
+  var umur = Math.min(jarak(awal, k) + 1, 366);   // cap setahun: cukup buat pola pekanan
+
+  var jendela = Math.min(30, umur);
+  var isi30 = 0;
+  for (var i = 0; i < jendela; i++) if (beres(h, geser(k, -i))) isi30++;
+
+  var peluang = [0, 0, 0, 0, 0, 0, 0], isi = [0, 0, 0, 0, 0, 0, 0];
+  for (var d = 0; d < umur; d++) {
+    var t = geser(k, -d), hd = hariKe(t);
+    peluang[hd]++;
+    if (beres(h, t)) isi[hd]++;
+  }
+  var lemah = -1, rasio = 2;
+  for (var j = 0; j < 7; j++) {
+    var r = isi[j] / peluang[j];
+    if (r < rasio) { rasio = r; lemah = j; }
+  }
+  return {
+    total: total(h), runtun: runtun(h), rekor: rekor(h),
+    umur: umur, pct30: Math.round(isi30 / jendela * 100),
+    hariLemah: lemah,
+    lemahIsi: lemah < 0 ? 0 : isi[lemah],
+    lemahPeluang: lemah < 0 ? 0 : peluang[lemah]
+  };
+}
+
 /* Apakah menempelkan habit `id` setelah `calonPemicu` bikin rantai muter.
    `semua` = array habit (disuplai caller, bukan global). */
 function muter(semua, id, calonPemicu) {
@@ -141,6 +180,6 @@ return {
   kunciTgl: kunciTgl, keTgl: keTgl, geser: geser, jarak: jarak,
   kini: kini, hariKe: hariKe,
   pulihkan: pulihkan, beres: beres, runtun: runtun, rekor: rekor,
-  total: total, muter: muter
+  total: total, muter: muter, statistik: statistik
 };
 });

@@ -191,7 +191,8 @@ html[data-tema=terang] .kartu.-angkat{box-shadow:0 14px 30px rgba(60,50,20,.16)}
 
 .kartu__atas{display:flex;align-items:center;gap:4px}
 .pegang{
-  width:30px;height:40px;flex:0 0 auto;margin-left:-6px;
+  /* 44px = batas bawah target sentuh; di bawah itu geser pakai jempol sengsara */
+  width:44px;height:48px;flex:0 0 auto;margin-left:-11px;
   display:grid;place-items:center;
   color:var(--ink3);
   touch-action:none;
@@ -204,6 +205,8 @@ html[data-tema=terang] .kartu.-angkat{box-shadow:0 14px 30px rgba(60,50,20,.16)}
 
 .kartu__nama{flex:1;min-width:0}
 .nama{
+  cursor:pointer;
+  border-radius:4px;
   margin:0;font-size:17px;font-weight:700;font-stretch:92%;
   letter-spacing:-.015em;line-height:1.25;
   overflow-wrap:anywhere;
@@ -216,6 +219,19 @@ html[data-tema=terang] .kartu.-angkat{box-shadow:0 14px 30px rgba(60,50,20,.16)}
 }
 .kartu__stat b{color:var(--aksen);font-weight:700}
 .kartu__stat i{font-style:normal;color:var(--ink3)}
+
+/* panel statistik per kartu — dibuka dari menu ⋮ */
+.statistik{
+  margin:12px 0 0;padding-top:11px;
+  border-top:1.5px dashed var(--garis);
+  font-size:12.5px;line-height:1.6;color:var(--ink2);
+}
+.statistik b{color:var(--ink)}
+.statistik p{margin:3px 0 0}
+
+/* kedip saat kartu difokuskan dari notifikasi */
+.kartu.-sorot{animation:sorotK 1.4s var(--gerak)}
+@keyframes sorotK{25%{box-shadow:0 0 0 3px var(--aksen)}}
 
 .kartu__aksi{
   display:flex;flex-wrap:wrap;gap:6px;
@@ -248,12 +264,23 @@ html[data-tema=terang] .mini.-bahaya:hover{border-color:#C2331A;color:#C2331A}
 }
 
 .susunPilih{width:100%;margin-top:3px}
-.susunPilih select{
+.susunPilih__label{
+  display:block;margin-bottom:5px;
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:10px;font-stretch:87.5%;letter-spacing:.05em;
+  color:var(--ink3);text-transform:uppercase;
+}
+.susunPilih select,.susunPilih input[type=date]{
   width:100%;font:inherit;font-size:14px;
   padding:10px 12px;
   background:var(--bg3);color:var(--ink);
   border:1.5px solid var(--garis2);border-radius:10px;
+  color-scheme:dark;
 }
+html[data-tema=terang] .susunPilih select,
+html[data-tema=terang] .susunPilih input[type=date]{color-scheme:light}
+
+.mini.-aktif{border-color:var(--aksen);color:var(--ink)}
 
 /* ═══ PETAK BENANG ═════════════════════════════
    Inti desainnya ada di sini. Tiap hari itu satu sel, TAPI hari yang beruntun

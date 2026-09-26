@@ -6,6 +6,8 @@
 
 Buka di HP, lalu "Add to Home Screen". Jalan offline penuh setelah kunjungan pertama.
 
+<img src="docs/demo.webp" alt="Demo Terusin di HP" width="300">
+
 ---
 
 ## Kenapa ini ada
@@ -18,11 +20,13 @@ Yang benar-benar tidak ada di kompetitor: **habit stacking** (susun kebiasaan ja
 
 - **Batang menyatu, bukan grid.** 5 hari beruntun dan 5 hari acak langsung kelihatan beda dari bentuknya.
 - **Satu ketikan.** Tulis nama, tekan Enter. Tanpa wizard, tanpa wajib pilih kategori atau ikon.
-- **Tandai hari mana saja**, bukan cuma hari ini. Lupa nyatet 3 hari lalu tetap bisa.
+- **Tandai hari mana saja**, bukan cuma hari ini. Lupa nyatet 3 hari lalu tetap bisa. Ketuk nama kebiasaan = tandai hari ini.
+- **Salah ketuk? Batalkan.** Tiap tandai bisa di-undo dari toastnya.
+- **Statistik per kebiasaan.** Persen 30 hari, rekor, dan hari yang paling sering bolong.
 - **Offline penuh.** Service worker cache semua aset. Cabut internet, tetap jalan.
 - **Data cuma di HP kamu.** localStorage. Tanpa akun, tanpa server, tanpa analytics, tanpa tracker.
 - **Ekspor/impor JSON.** Datamu bisa kamu bawa pergi — di HP langsung ke share sheet (Drive, iCloud, Files). App mengingatkan kalau sudah >7 hari belum cadangan.
-- **Pengingat harian.** Opt-in, jam pilihanmu. Di Chromium jalan walau app tertutup; di iPhone selama app dibuka.
+- **Pengingat harian.** Opt-in, jam pilihanmu, bisa jam berbeda per kebiasaan. Ketuk notifikasinya langsung nyorot kartu yang dimaksud. Di Chromium jalan walau app tertutup; di iPhone selama app dibuka.
 - **Nol dependency.** Vanilla HTML/CSS/JS. Nol build step untuk development.
 
 ## Desain
