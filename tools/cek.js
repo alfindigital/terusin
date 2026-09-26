@@ -28,7 +28,7 @@ function ambilArray(src, nama) {
 }
 
 /* 1. Sintaks semua JS valid (node --check, tetap nol dependency). */
-for (const f of ['js/app.js', 'sw.js', 'tools/build-dist.js', 'tools/make-icons.js', 'tools/cek.js']) {
+for (const f of ['js/core.js', 'js/app.js', 'sw.js', 'tools/build-dist.js', 'tools/make-icons.js', 'tools/cek.js', 'tools/tes.js']) {
   let valid = true;
   try { cp.execFileSync(process.execPath, ['--check', path.join(ROOT, f)], { stdio: 'pipe' }); }
   catch (e) { valid = false; }

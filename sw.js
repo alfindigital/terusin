@@ -1,10 +1,11 @@
 /* Service worker Terusin. App shell cache-first, font stale-while-revalidate. */
-var CACHE = 'terusin-v3';
+var CACHE = 'terusin-v4';
 var SHELL = [
   './',
   'index.html',
-  'css/style.css?v=3',
-  'js/app.js?v=3',
+  'css/style.css?v=4',
+  'js/core.js?v=4',
+  'js/app.js?v=4',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -73,4 +74,14 @@ self.addEventListener('fetch', function (e) {
       });
     })
   );
+});
+
+/* Pengingat harian saat app tertutup — hanya jalan di Chromium (Android).
+   iOS belum dukung periodicSync; di sana pengingat dicek app.js saat dibuka. */
+self.addEventListener('periodicsync', function (e) {
+  if (e.tag !== 'ingatkan') return;
+  e.waitUntil(self.registration.showNotification('Terusin', {
+    body: 'Jangan sampai putus — tandai kebiasaanmu hari ini.',
+    tag: 'ingatkan'
+  }));
 });

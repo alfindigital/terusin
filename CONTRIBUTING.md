@@ -10,6 +10,7 @@ Nol dependency — tidak ada `package.json`, tidak ada `npm install`.
 ```bash
 python -m http.server 4820      # jalan lokal → http://localhost:4820
 node tools/cek.js               # cek aset, sintaks, daftar putih
+node tools/tes.js               # test logic core.js (streak, sanitasi, rantai)
 node tools/build-dist.js        # rakit dist/ (daftar putih)
 npx wrangler pages deploy dist --project-name terusin   # deploy
 ```
