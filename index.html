@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wdth,wght@75..112.5,300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -83,7 +83,17 @@
     </div>
 
     <div class="baris">
-      <div class="baris__t"><b>Data kamu</b><span>Semua di HP ini, tanpa akun, tanpa server</span></div>
+      <div class="baris__t"><b>Pengingat harian</b><span>Notifikasi tiap jam pilihan. Di iPhone baru jalan selama app dibuka.</span></div>
+      <div class="segmen" role="radiogroup" aria-label="Pengingat harian">
+        <button type="button" data-ingat="" role="radio" aria-checked="true">Mati</button>
+        <button type="button" data-ingat="07:00" role="radio" aria-checked="false">07.00</button>
+        <button type="button" data-ingat="12:00" role="radio" aria-checked="false">12.00</button>
+        <button type="button" data-ingat="20:00" role="radio" aria-checked="false">20.00</button>
+      </div>
+    </div>
+
+    <div class="baris">
+      <div class="baris__t"><b>Data kamu</b><span id="dataKet">Semua di HP ini, tanpa akun, tanpa server</span></div>
       <div class="baris__tombol">
         <button type="button" class="tbl" id="bEkspor">Simpan ke file</button>
         <button type="button" class="tbl" id="bImpor">Muat dari file</button>
@@ -124,6 +134,7 @@
   </article>
 </template>
 
-<script src="js/app.js?v=3"></script>
+<script src="js/core.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

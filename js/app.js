@@ -3,51 +3,21 @@
 'use strict';
 
 var KUNCI = 'terusin.v1';
-var VERSI = '1.0.0';
+var VERSI = '1.1.0';
 
-/* Warna: nama semantik disimpan, hex-nya ikut tema. Kalau hex yang disimpan,
-   warna yang bagus di gelap jadi jelek di terang. */
-var WARNA = [
-  { id: 'kunyit', gelap: '#E8A33D', terang: '#9A5E02' },
-  { id: 'daun',   gelap: '#7CC257', terang: '#3D7519' },
-  { id: 'nila',   gelap: '#6E9CF5', terang: '#1F5BC4' },
-  { id: 'mengkudu', gelap: '#F2705B', terang: '#C2331A' },
-  { id: 'pandan', gelap: '#42C8A8', terang: '#0A7860' },
-  { id: 'terung', gelap: '#B98CF0', terang: '#7136C4' },
-  { id: 'soga',   gelap: '#C99A6A', terang: '#8A5A22' },
-  { id: 'jambu',  gelap: '#EE7FB0', terang: '#B62C68' }
-];
-
-var HARI_P = ['Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb', 'Mg'];
-var HARI_L = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-/* ── tanggal: semua pakai kunci 'YYYY-MM-DD' lokal, jangan toISOString
-   karena itu UTC dan bikin geser sehari di WIB ── */
-function kunciTgl(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-function keTgl(k) {
-  var p = k.split('-');
-  return new Date(+p[0], +p[1] - 1, +p[2], 12);   // jam 12 supaya aman DST
-}
-function geser(k, n) {
-  var d = keTgl(k);
-  d.setDate(d.getDate() + n);
-  return kunciTgl(d);
-}
-function jarak(a, b) {
-  return Math.round((keTgl(b) - keTgl(a)) / 86400000);
-}
-function kini() { return kunciTgl(new Date()); }
-/* Senin = 0 */
-function hariKe(k) { return (keTgl(k).getDay() + 6) % 7; }
+/* Fungsi murni tinggal di js/core.js supaya bisa dites di node (tools/tes.js).
+   Di sini cuma dialiaskan — nama dan perilaku tidak berubah. */
+var WARNA = TerusinCore.WARNA, HARI_P = TerusinCore.HARI_P,
+    HARI_L = TerusinCore.HARI_L, BULAN = TerusinCore.BULAN;
+var kunciTgl = TerusinCore.kunciTgl, keTgl = TerusinCore.keTgl,
+    geser = TerusinCore.geser, jarak = TerusinCore.jarak,
+    kini = TerusinCore.kini, hariKe = TerusinCore.hariKe;
+var pulihkan = TerusinCore.pulihkan, beres = TerusinCore.beres,
+    runtun = TerusinCore.runtun, rekor = TerusinCore.rekor,
+    total = TerusinCore.total, muter = TerusinCore.muter;
 
 /* ── state ── */
-var S = { habit: [], tema: 'gelap' };
+var S = { habit: [], tema: 'gelap', ingat: null, ingatTerakhir: null, eksporTerakhir: null };
 var buka = {};        // id -> menu kartu kebuka
 var luas = {};        // id -> berapa pekan tambahan dibuka manual
 var pekan = 5;        // batas pekan otomatis, ikut lebar layar
@@ -60,63 +30,19 @@ function muat() {
     var d = JSON.parse(raw);
     if (d && Array.isArray(d.habit)) S.habit = pulihkan(d.habit);
     if (d && typeof d.tema === 'string') S.tema = d.tema;
+    if (d && /^\d{2}:\d{2}$/.test(d.ingat || '')) S.ingat = d.ingat;
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d.ingatTerakhir || '')) S.ingatTerakhir = d.ingatTerakhir;
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d.eksporTerakhir || '')) S.eksporTerakhir = d.eksporTerakhir;
   } catch (e) { /* data rusak total, mulai bersih */ }
 }
 
-/* Selamatkan sebanyak mungkin. Entri yang cuma kehilangan log atau warna masih
-   bisa dipakai, jadi jangan dibuang: buat app kebiasaan, membuang satu entri
-   berarti membuang riwayat berbulan bulan. Yang dibuang cuma yang benar benar
-   bukan kebiasaan (bukan objek, atau tanpa nama sama sekali). */
-function pulihkan(arr) {
-  var keluar = [], id = {};
-  for (var i = 0; i < arr.length; i++) {
-    var h = arr[i];
-    if (!h || typeof h !== 'object') continue;
-    var nama = typeof h.nama === 'string' ? h.nama.trim() : '';
-    if (!nama) continue;
-
-    var log = {};
-    if (h.log && typeof h.log === 'object' && !Array.isArray(h.log)) {
-      for (var k in h.log) {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && h.log[k]) log[k] = 1;
-      }
-    }
-    var hid = typeof h.id === 'string' && h.id && !id[h.id]
-      ? h.id
-      : 'h' + Date.now().toString(36) + i.toString(36);
-    id[hid] = 1;
-
-    var w = WARNA[0].id;
-    for (var j = 0; j < WARNA.length; j++) if (WARNA[j].id === h.warna) w = h.warna;
-
-    keluar.push({
-      id: hid,
-      nama: nama.slice(0, 48),
-      warna: w,
-      setelah: typeof h.setelah === 'string' ? h.setelah : null,
-      arsip: !!h.arsip,
-      mulai: /^\d{4}-\d{2}-\d{2}$/.test(h.mulai) ? h.mulai : (Object.keys(log).sort()[0] || kini()),
-      log: log
-    });
-  }
-  /* buang rujukan setelah yang menunjuk hantu atau muter, supaya rantai selalu sehat */
-  var ada = {};
-  keluar.forEach(function (h) { ada[h.id] = h; });
-  keluar.forEach(function (h) {
-    if (!h.setelah) return;
-    if (!ada[h.setelah]) { h.setelah = null; return; }
-    var lihat = {}, j = h.setelah;
-    while (j) {
-      if (j === h.id || lihat[j]) { h.setelah = null; break; }
-      lihat[j] = 1;
-      j = ada[j] ? ada[j].setelah : null;
-    }
-  });
-  return keluar;
-}
 function simpan() {
-  try { localStorage.setItem(KUNCI, JSON.stringify({ v: 1, habit: S.habit, tema: S.tema })); }
-  catch (e) { pesan('Penyimpanan penuh, perubahan terakhir nggak ikut tersimpan'); }
+  try {
+    localStorage.setItem(KUNCI, JSON.stringify({
+      v: 1, habit: S.habit, tema: S.tema,
+      ingat: S.ingat, ingatTerakhir: S.ingatTerakhir, eksporTerakhir: S.eksporTerakhir
+    }));
+  } catch (e) { pesan('Penyimpanan penuh, perubahan terakhir nggak ikut tersimpan'); }
 }
 
 /* ── hitungan ── */
@@ -127,27 +53,6 @@ function warnaHex(h) {
   if (!w) w = WARNA[0];
   return S.tema === 'terang' ? w.terang : w.gelap;
 }
-function beres(h, k) { return !!h.log[k]; }
-
-/* Runtun dihitung dari hari ini ke belakang. Hari ini yang belum ditandai
-   TIDAK memutus runtun, karena harinya belum habis. */
-function runtun(h) {
-  var k = kini(), n = 0;
-  if (!beres(h, k)) k = geser(k, -1);
-  while (beres(h, k)) { n++; k = geser(k, -1); }
-  return n;
-}
-function rekor(h) {
-  var ks = Object.keys(h.log).sort();
-  var best = 0, run = 0, prev = null;
-  for (var i = 0; i < ks.length; i++) {
-    run = (prev && jarak(prev, ks[i]) === 1) ? run + 1 : 1;
-    if (run > best) best = run;
-    prev = ks[i];
-  }
-  return best;
-}
-function total(h) { return Object.keys(h.log).length; }
 
 /* Susunan: habit boleh "nempel" ke habit lain (stacking). Pemicunya harus
    habit lain yang aktif, dan rantainya nggak boleh muter. */
@@ -157,18 +62,6 @@ function pemicu(h) {
     if (S.habit[i].id === h.setelah && !S.habit[i].arsip) return S.habit[i];
   }
   return null;   // pemicunya sudah diarsip atau dihapus, anggap lepas
-}
-function muter(id, calonPemicu) {
-  var lihat = {}, j = calonPemicu;
-  while (j) {
-    if (j === id) return true;
-    if (lihat[j]) return true;
-    lihat[j] = 1;
-    var n = null;
-    for (var i = 0; i < S.habit.length; i++) if (S.habit[i].id === j) n = S.habit[i];
-    j = n ? n.setelah : null;
-  }
-  return false;
 }
 /* giliran: pemicunya sudah beres hari ini, tapi ini belum. inilah yang harus
    dikerjakan sekarang. */
@@ -183,6 +76,7 @@ var el = {
   tgl: $('#tgl'), judul: $('#judul'), sub: $('#sub'),
   daftar: $('#daftar'), galat: $('#galat'),
   fTambah: $('#fTambah'), iNama: $('#iNama'),
+  dataKet: $('#dataKet'),
   arsipBlok: $('#arsipBlok'), arsipIsi: $('#arsipIsi'),
   bArsip: $('#bArsip'), arsipHitung: $('#arsipHitung'),
   rekap: $('#rekap'), sheet: $('#sheet'), toast: $('#toast'),
@@ -210,6 +104,8 @@ function gambar() {
   gambarDaftar();
   gambarArsip();
   gambarKaki();
+  pasangKetData();
+  pasangIngatSeg();
 }
 
 function gambarKepala() {
@@ -464,7 +360,7 @@ function isiMenu(kotak, h) {
 
   /* susun setelah habit lain */
   var kandidat = aktif().filter(function (x) {
-    return x.id !== h.id && !muter(h.id, x.id);
+    return x.id !== h.id && !muter(S.habit, h.id, x.id);
   });
   var wrap = document.createElement('div');
   wrap.className = 'susunPilih';
@@ -565,6 +461,98 @@ function gambarKaki() {
   var hari = 0;
   a.forEach(function (h) { hari += total(h); });
   el.rekap.textContent = a.length + ' kebiasaan · ' + hari + ' hari tercatat · cuma di HP ini';
+}
+
+function pasangKetData() {
+  if (!el.dataKet) return;
+  var d = S.eksporTerakhir, n = d ? jarak(d, kini()) : null;
+  el.dataKet.textContent = 'Semua di HP ini, tanpa akun, tanpa server · ' +
+    (d === null ? 'belum pernah dicadangkan'
+     : n === 0 ? 'dicadangkan hari ini'
+     : 'terakhir dicadangkan ' + n + ' hari lalu');
+}
+
+/* Cadangan manual itu mitigasi satu-satunya untuk risiko terbesar app ini:
+   localStorage bisa kehapus bersih data situs atau hilang bareng HP.
+   Jadi app mengingatkan, bukan diam-diam berharap user ingat. */
+function ingatCadangan() {
+  var adaData = false;
+  for (var i = 0; i < S.habit.length; i++) if (total(S.habit[i]) > 0) { adaData = true; break; }
+  if (!adaData) return;
+  var n = S.eksporTerakhir ? jarak(S.eksporTerakhir, kini()) : Infinity;
+  if (n <= 7) return;
+  pesan(n === Infinity ? 'Datamu belum pernah dicadangkan'
+        : 'Terakhir dicadangkan ' + n + ' hari lalu', {
+    label: 'Simpan ke file', jalan: ekspor
+  });
+}
+
+/* ── pengingat harian ── */
+function pasangIngatSeg() {
+  Array.prototype.forEach.call(el.sheet.querySelectorAll('[data-ingat]'), function (b) {
+    b.setAttribute('aria-checked', (b.dataset.ingat || null) === (S.ingat || null) ? 'true' : 'false');
+  });
+}
+
+function aktifkanIngat(jam) {
+  if (!('Notification' in window)) { pesan('Browser ini tidak bisa notifikasi'); return; }
+  if (Notification.permission === 'denied') {
+    pesan('Notifikasi diblokir — izinkan dulu di pengaturan situs browser');
+    return;
+  }
+  var lanjut = function () {
+    S.ingat = jam || null;
+    simpan(); pasangIngatSeg(); sinkronPeriodic();
+    if (jam) pesan('Diingetin tiap jam ' + jam.replace(':', '.'));
+  };
+  if (jam && Notification.permission === 'default') {
+    Notification.requestPermission().then(function (p) {
+      if (p === 'granted') lanjut();
+      else pesan('Izin notifikasi tidak diberikan');
+    });
+    return;
+  }
+  lanjut();
+}
+
+/* Notifikasi lewat SW registration kalau ada (wajib di Chrome Android),
+   fallback Notification biasa di desktop. */
+function notif(judul, opsi) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function (r) {
+      r.showNotification(judul, opsi);
+    }).catch(function () {
+      try { new Notification(judul, opsi); } catch (e) {}
+    });
+  } else {
+    try { new Notification(judul, opsi); } catch (e) {}
+  }
+}
+
+function cekIngat() {
+  if (!S.ingat || !('Notification' in window) || Notification.permission !== 'granted') return;
+  var k = kini();
+  if (S.ingatTerakhir === k) return;
+  var d = new Date();
+  var hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if (hm < S.ingat) return;
+  var sisa = aktif().filter(function (h) { return !beres(h, k); }).length;
+  if (!sisa) return;
+  S.ingatTerakhir = k;
+  simpan();
+  notif('Terusin', { body: sisa + ' kebiasaan belum ditandai hari ini. Jangan sampai putus.', tag: 'ingatkan' });
+}
+
+/* Periodic Background Sync: satu-satunya jalan notifikasi saat app TERTUTUP
+   tanpa server. Cuma ada di Chromium (Android/desktop); iOS belum dukung,
+   jadi di sana pengingat berlaku selama app dibuka — sesuai tulisan di sheet. */
+function sinkronPeriodic() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(function (r) {
+    if (!('periodicSync' in r)) return;
+    if (S.ingat) r.periodicSync.register('ingatkan', { minInterval: 24 * 60 * 60 * 1000 }).catch(function () {});
+    else r.periodicSync.unregister('ingatkan').catch(function () {});
+  }).catch(function () {});
 }
 
 /* ── aksi ── */
@@ -726,7 +714,7 @@ function pasangTema() {
     : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.4A7 7 0 017.6 3.5a7 7 0 108.9 8.9z"/></svg>';
   document.getElementById('bTema').innerHTML = ikon;
 
-  Array.prototype.forEach.call(el.sheet.querySelectorAll('.segmen button'), function (b) {
+  Array.prototype.forEach.call(el.sheet.querySelectorAll('.segmen button[data-tema]'), function (b) {
     b.setAttribute('aria-checked', b.dataset.tema === S.tema ? 'true' : 'false');
   });
 }
@@ -742,12 +730,34 @@ function hitungPekan() {
 /* ── ekspor / impor ── */
 function ekspor() {
   var data = JSON.stringify({ app: 'terusin', v: 1, waktu: new Date().toISOString(), habit: S.habit }, null, 2);
+  var namaFile = 'terusin-' + kini() + '.json';
+  /* Di HP dilempar ke share sheet — bisa langsung ke Drive/iCloud/Files,
+     cadangan yang nggak bergantung ingatan soal folder unduhan. */
+  try {
+    var f = new File([data], namaFile, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) {
+      navigator.share({ files: [f], title: 'Cadangan Terusin' }).then(function () {
+        tandaiEkspor(); pesan('File tersimpan');
+      }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;   // user batal sendiri
+        unduhFile(data, namaFile);
+      });
+      return;
+    }
+  } catch (e) {}
+  unduhFile(data, namaFile);
+}
+
+function tandaiEkspor() { S.eksporTerakhir = kini(); simpan(); gambar(); }
+
+function unduhFile(data, namaFile) {
   var b = new Blob([data], { type: 'application/json' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(b);
-  a.download = 'terusin-' + kini() + '.json';
+  a.download = namaFile;
   a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  tandaiEkspor();
   pesan('File tersimpan');
 }
 
@@ -843,11 +853,15 @@ function pasang() {
     if (e.key === 'Escape' && !el.sheet.hidden) tutupSheet();
   });
 
-  Array.prototype.forEach.call(el.sheet.querySelectorAll('.segmen button'), function (b) {
+  Array.prototype.forEach.call(el.sheet.querySelectorAll('.segmen button[data-tema]'), function (b) {
     b.addEventListener('click', function () {
       S.tema = b.dataset.tema;
       simpan(); pasangTema(); gambar();
     });
+  });
+
+  Array.prototype.forEach.call(el.sheet.querySelectorAll('[data-ingat]'), function (b) {
+    b.addEventListener('click', function () { aktifkanIngat(b.dataset.ingat || null); });
   });
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () {
     if (S.tema === 'sistem') { pasangTema(); gambar(); }
@@ -885,6 +899,7 @@ function pasang() {
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) return;
     if (kini() !== hariCache) { hariCache = kini(); gambar(); }
+    cekIngat();   // balik ke app = momen paling layak buat ngingetin
   });
 }
 
@@ -894,6 +909,10 @@ hitungPekan();
 pasangTema();
 pasang();
 gambar();
+ingatCadangan();
+cekIngat();
+sinkronPeriodic();
+setInterval(cekIngat, 60000);
 document.getElementById('sheetVersi').textContent = 'Terusin v' + VERSI + ' · buatan Alfin';
 
 if ('serviceWorker' in navigator) {

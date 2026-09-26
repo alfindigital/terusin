@@ -21,7 +21,8 @@ Yang benar-benar tidak ada di kompetitor: **habit stacking** (susun kebiasaan ja
 - **Tandai hari mana saja**, bukan cuma hari ini. Lupa nyatet 3 hari lalu tetap bisa.
 - **Offline penuh.** Service worker cache semua aset. Cabut internet, tetap jalan.
 - **Data cuma di HP kamu.** localStorage. Tanpa akun, tanpa server, tanpa analytics, tanpa tracker.
-- **Ekspor/impor JSON.** Datamu bisa kamu bawa pergi.
+- **Ekspor/impor JSON.** Datamu bisa kamu bawa pergi — di HP langsung ke share sheet (Drive, iCloud, Files). App mengingatkan kalau sudah >7 hari belum cadangan.
+- **Pengingat harian.** Opt-in, jam pilihanmu. Di Chromium jalan walau app tertutup; di iPhone selama app dibuka.
 - **Nol dependency.** Vanilla HTML/CSS/JS. Nol build step untuk development.
 
 ## Desain
@@ -60,11 +61,14 @@ Buka `http://localhost:4820`.
 ```
 index.html              satu halaman
 css/style.css           semua gaya
-js/app.js               semua logika
-sw.js                   service worker (offline)
+js/core.js              fungsi murni (tanggal, streak, sanitasi)
+js/app.js               DOM, state, aksi
+sw.js                   service worker (offline + pengingat)
 manifest.webmanifest    metadata PWA
 _headers                header keamanan Cloudflare Pages
 icons/                  ikon PWA + maskable
+tools/cek.js            cek aset & daftar putih (nol dependency)
+tools/tes.js            test logic core.js (nol dependency)
 tools/build-dist.js     rakit dist/ pakai daftar putih
 tools/make-icons.js     regenerasi ikon
 ```
