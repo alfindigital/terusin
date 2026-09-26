@@ -1,14 +1,17 @@
 # Panduan Kontribusi
 
 1. Fork repo ini
-2. Buat branch: eat/fitur, ix/bug, docs/perubahan
-3. Commit: eat: deskripsi, ix: deskripsi
+2. Buat branch: `feat/fitur`, `fix/bug`, `docs/perubahan`
+3. Commit: `feat: deskripsi`, `fix: deskripsi`
 4. Buka Pull Request
 
-`ash
-npm install && npm run dev
-npm test
-npm run build
-`
+Nol dependency — tidak ada `package.json`, tidak ada `npm install`.
 
-Jangan commit .env*, API key, atau credential. Lisensi: [MIT](LICENSE).
+```bash
+python -m http.server 4820      # jalan lokal → http://localhost:4820
+node tools/cek.js               # cek aset, sintaks, daftar putih
+node tools/build-dist.js        # rakit dist/ (daftar putih)
+npx wrangler pages deploy dist --project-name terusin   # deploy
+```
+
+Jangan commit `.env*`, API key, atau credential. Lisensi: [MIT](LICENSE).
