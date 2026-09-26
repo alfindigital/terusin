@@ -86,10 +86,10 @@ svg circle:not([stroke]){fill:currentColor;stroke:none}
 .merek__g{width:34px;height:12px;flex:0 0 auto}
 .merek__g rect{fill:var(--ink);stroke:none}
 .merek__t{
+  margin:0;
   font-weight:800;font-size:17px;letter-spacing:-.02em;
   font-stretch:92%;
 }
-.atas__aksi{display:flex;gap:6px}
 
 .ikon{
   width:42px;height:42px;flex:0 0 auto;
@@ -106,34 +106,26 @@ svg circle:not([stroke]){fill:currentColor;stroke:none}
 /* ═══ badan ════════════════════════════════════ */
 .isi{
   width:var(--lebar);margin:0 auto;
-  padding-bottom:calc(48px + env(safe-area-inset-bottom));
+  /* ruang kosong seukuran bar bawah + napas */
+  padding-bottom:calc(104px + env(safe-area-inset-bottom));
 }
 
-.tgl{
-  margin:14px 0 0;
-  font-family:'Martian Mono',ui-monospace,monospace;
-  font-size:11px;font-weight:400;font-stretch:87.5%;
-  letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink3);
+/* ═══ bar bawah: tambah + setelan, zona jempol ══ */
+.bawah{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  padding:26px 0 calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(transparent,var(--bg) 42%);
 }
-.judul{
-  margin:6px 0 0;
-  font-size:clamp(31px,8.2vw,50px);
-  font-weight:800;font-stretch:88%;
-  letter-spacing:-.035em;line-height:1.02;
-  text-wrap:balance;
+.bawah__baris{
+  display:flex;gap:8px;align-items:center;
+  width:var(--lebar);margin:0 auto;
 }
-.judul b{font-weight:800;color:var(--aksen,#E8A33D)}
-.sub{
-  margin:9px 0 0;
-  color:var(--ink2);font-size:14.5px;
-  max-width:44ch;
-}
+.bawah .ikon{flex:0 0 auto;background:var(--bg2);border:1.5px solid var(--garis)}
 
 /* ═══ tambah: satu kolom, tanpa kategori ═══════ */
 .tambah{
   display:flex;gap:8px;align-items:center;
-  margin:22px 0 0;
+  flex:1;min-width:0;
 }
 .tambah__in{
   flex:1;min-width:0;
@@ -158,7 +150,7 @@ svg circle:not([stroke]){fill:currentColor;stroke:none}
 .tambah__ok:active{transform:scale(.92)}
 
 .galat{
-  margin:9px 0 0;font-size:13.5px;font-weight:600;
+  margin:0 4px 8px;font-size:13.5px;font-weight:600;
   color:#F2705B;
 }
 html[data-tema=terang] .galat{color:#C2331A}
@@ -381,19 +373,6 @@ html[data-tema=terang] .mini.-bahaya:hover{border-color:#C2331A;color:#C2331A}
 }
 .kosong__cepat button:hover{border-color:var(--ink3);color:var(--ink)}
 
-/* ═══ kaki ═════════════════════════════════════ */
-.kaki{
-  display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;
-  margin:32px 0 0;padding-top:15px;
-  border-top:1.5px solid var(--garis);
-  font-family:'Martian Mono',ui-monospace,monospace;
-  font-size:11px;                /* jangan turunkan: < 11px gagal AA */
-  color:var(--ink2);
-}
-.kaki a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--garis2)}
-.kaki a:hover{color:var(--ink)}
-.kaki__sep{color:var(--ink3)}
-
 /* ═══ sheet pengaturan ═════════════════════════ */
 .sheet{position:fixed;inset:0;z-index:50}
 .sheet[hidden]{display:none}
@@ -446,16 +425,10 @@ html[data-tema=terang] .tbl.-bahaya{color:#C2331A;border-color:#E8BDB2}
 html[data-tema=terang] .tbl.-bahaya:hover{background:#FBEAE5;border-color:#C2331A}
 .tbl.-lebar{width:100%;margin-top:16px;padding:14px}
 
-.sheet__versi{
-  margin:16px 0 0;
-  font-family:'Martian Mono',ui-monospace,monospace;
-  font-size:11px;color:var(--ink2);
-}
-
 /* ═══ toast ════════════════════════════════════ */
 .toast{
   position:fixed;z-index:55;
-  left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
+  left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));
   max-width:440px;margin:0 auto;
   display:flex;align-items:center;gap:12px;
   padding:13px 16px;
