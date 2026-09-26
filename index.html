@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wdth,wght@75..112.5,300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -25,29 +25,11 @@
       <rect x="0" y="2" width="28" height="12" rx="3"/>
       <rect x="32" y="2" width="12" height="12" rx="3" opacity=".32"/>
     </svg>
-    <span class="merek__t">Terusin</span>
-  </div>
-  <div class="atas__aksi">
-    <button type="button" class="ikon" id="bTema" aria-label="Ganti tema"></button>
-    <button type="button" class="ikon" id="bSetel" aria-label="Buka pengaturan" aria-expanded="false">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14"/><circle cx="7" cy="6" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="7" cy="14" r="2"/></svg>
-    </button>
+    <h1 class="merek__t">Terusin</h1>
   </div>
 </header>
 
 <main class="isi">
-
-  <p class="tgl" id="tgl"></p>
-  <h1 class="judul" id="judul">Terusin</h1>
-  <p class="sub" id="sub"></p>
-
-  <form class="tambah" id="fTambah" autocomplete="off">
-    <input class="tambah__in" id="iNama" maxlength="48" placeholder="Tulis kebiasaan, terus Enter" aria-label="Nama kebiasaan baru">
-    <button class="tambah__ok" type="submit" aria-label="Tambah kebiasaan">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
-    </button>
-  </form>
-  <p class="galat" id="galat" role="alert" hidden></p>
 
   <div class="daftar" id="daftar"></div>
 
@@ -59,13 +41,22 @@
     <div class="arsip__isi" id="arsipIsi" hidden></div>
   </section>
 
-  <footer class="kaki">
-    <span id="rekap"></span>
-    <span class="kaki__sep" aria-hidden="true">·</span>
-    <a href="https://instagram.com/alfindigital" target="_blank" rel="noopener noreferrer">@alfindigital</a>
-  </footer>
-
 </main>
+
+<div class="bawah">
+  <p class="galat" id="galat" role="alert" hidden></p>
+  <div class="bawah__baris">
+    <form class="tambah" id="fTambah" autocomplete="off">
+      <input class="tambah__in" id="iNama" maxlength="48" placeholder="Tulis kebiasaan, terus Enter" aria-label="Nama kebiasaan baru">
+      <button class="tambah__ok" type="submit" aria-label="Tambah kebiasaan">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+      </button>
+    </form>
+    <button type="button" class="ikon" id="bSetel" aria-label="Buka pengaturan" aria-expanded="false">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14"/><circle cx="7" cy="6" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="7" cy="14" r="2"/></svg>
+    </button>
+  </div>
+</div>
 
 <div class="sheet" id="sheet" hidden>
   <div class="sheet__tirai" id="sheetTirai"></div>
@@ -108,7 +99,6 @@
       </div>
     </div>
 
-    <p class="sheet__versi" id="sheetVersi"></p>
     <button type="button" class="tbl -lebar" id="bTutupSheet">Tutup</button>
   </div>
 </div>
@@ -134,7 +124,7 @@
   </article>
 </template>
 
-<script src="js/core.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/core.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

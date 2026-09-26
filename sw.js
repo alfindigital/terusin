@@ -1,11 +1,11 @@
 /* Service worker Terusin. App shell cache-first, font stale-while-revalidate. */
-var CACHE = 'terusin-v4';
+var CACHE = 'terusin-v5';
 var SHELL = [
   './',
   'index.html',
-  'css/style.css?v=4',
-  'js/core.js?v=4',
-  'js/app.js?v=4',
+  'css/style.css?v=5',
+  'js/core.js?v=5',
+  'js/app.js?v=5',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

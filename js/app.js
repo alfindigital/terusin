@@ -3,7 +3,6 @@
 'use strict';
 
 var KUNCI = 'terusin.v1';
-var VERSI = '1.1.0';
 
 /* Fungsi murni tinggal di js/core.js supaya bisa dites di node (tools/tes.js).
    Di sini cuma dialiaskan — nama dan perilaku tidak berubah. */
@@ -73,13 +72,12 @@ function giliran(h) {
 /* ── DOM ── */
 var $ = function (s) { return document.querySelector(s); };
 var el = {
-  tgl: $('#tgl'), judul: $('#judul'), sub: $('#sub'),
   daftar: $('#daftar'), galat: $('#galat'),
   fTambah: $('#fTambah'), iNama: $('#iNama'),
   dataKet: $('#dataKet'),
   arsipBlok: $('#arsipBlok'), arsipIsi: $('#arsipIsi'),
   bArsip: $('#bArsip'), arsipHitung: $('#arsipHitung'),
-  rekap: $('#rekap'), sheet: $('#sheet'), toast: $('#toast'),
+  sheet: $('#sheet'), toast: $('#toast'),
   toastT: $('#toastT'), toastB: $('#toastB'), tpl: $('#tplKartu')
 };
 
@@ -100,43 +98,12 @@ function pesan(t, aksi) {
 
 /* ── gambar ── */
 function gambar() {
-  gambarKepala();
+  var a = aktif();
+  document.documentElement.style.setProperty('--aksen', a.length ? warnaHex(a[0]) : '#E8A33D');
   gambarDaftar();
   gambarArsip();
-  gambarKaki();
   pasangKetData();
   pasangIngatSeg();
-}
-
-function gambarKepala() {
-  var d = new Date(), k = kini();
-  el.tgl.textContent = HARI_L[hariKe(k)] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()];
-
-  var a = aktif();
-  var sudah = a.filter(function (h) { return beres(h, k); }).length;
-  document.documentElement.style.setProperty('--aksen', a.length ? warnaHex(a[0]) : '#E8A33D');
-
-  if (!S.habit.length) {
-    el.judul.textContent = 'Mulai dari satu.';
-    el.sub.textContent = 'Tulis kebiasaan di kolom bawah, langsung Enter. Nggak perlu pilih kategori dulu.';
-    return;
-  }
-  if (!a.length) {
-    el.judul.textContent = 'Semua diarsipkan.';
-    el.sub.textContent = 'Keluarkan lagi dari arsip, atau tulis yang baru.';
-    return;
-  }
-  if (sudah === a.length) {
-    el.judul.innerHTML = 'Beres semua, <b>' + sudah + '</b> dari <b>' + a.length + '</b>.';
-    el.sub.textContent = 'Benangnya nyambung lagi hari ini. Balik besok.';
-    return;
-  }
-  /* Kalau ada yang nunggu giliran, itu yang paling berguna disebut. */
-  var g = a.filter(giliran);
-  el.judul.innerHTML = 'Hari ini <b>' + sudah + '</b> dari <b>' + a.length + '</b>.';
-  el.sub.textContent = g.length
-    ? 'Habis "' + (pemicu(g[0]) || {}).nama + '", giliran "' + g[0].nama + '".'
-    : 'Ketuk kotak hari mana saja, termasuk yang kelewat.';
 }
 
 function gambarDaftar() {
@@ -151,7 +118,7 @@ function gambarDaftar() {
     kos.querySelector('b').textContent = judulKos;
     kos.querySelector('span').textContent = S.habit.length
       ? 'Semua kebiasaanmu ada di arsip.'
-      : 'Coba salah satu ini, atau tulis sendiri di atas.';
+      : 'Coba salah satu ini, atau tulis sendiri di bawah.';
     if (!S.habit.length) {
       ['Minum air', 'Jalan pagi', 'Baca 10 halaman', 'Nggak buka HP sebelum tidur'].forEach(function (n) {
         var b = document.createElement('button');
@@ -456,13 +423,6 @@ function gambarArsip() {
   });
 }
 
-function gambarKaki() {
-  var a = aktif();
-  var hari = 0;
-  a.forEach(function (h) { hari += total(h); });
-  el.rekap.textContent = a.length + ' kebiasaan · ' + hari + ' hari tercatat · cuma di HP ini';
-}
-
 function pasangKetData() {
   if (!el.dataKet) return;
   var d = S.eksporTerakhir, n = d ? jarak(d, kini()) : null;
@@ -709,11 +669,6 @@ function pasangTema() {
   var m = document.querySelector('meta[name=theme-color]');
   if (m) m.setAttribute('content', t === 'terang' ? '#F7F4EC' : '#17150F');
 
-  var ikon = t === 'terang'
-    ? '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6" fill="none" stroke="currentColor"/><path d="M10 1.6v2M10 16.4v2M18.4 10h-2M3.6 10h-2M15.9 4.1l-1.4 1.4M5.5 14.5l-1.4 1.4M15.9 15.9l-1.4-1.4M5.5 5.5L4.1 4.1"/></svg>'
-    : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.4A7 7 0 017.6 3.5a7 7 0 108.9 8.9z"/></svg>';
-  document.getElementById('bTema').innerHTML = ikon;
-
   Array.prototype.forEach.call(el.sheet.querySelectorAll('.segmen button[data-tema]'), function (b) {
     b.setAttribute('aria-checked', b.dataset.tema === S.tema ? 'true' : 'false');
   });
@@ -830,11 +785,6 @@ function pasang() {
     el.bArsip.setAttribute('aria-expanded', b ? 'true' : 'false');
   });
 
-  document.getElementById('bTema').addEventListener('click', function () {
-    S.tema = document.documentElement.dataset.tema === 'terang' ? 'gelap' : 'terang';
-    simpan(); pasangTema(); gambar();
-  });
-
   /* sheet */
   var bukaSheet = document.getElementById('bSetel');
   function tutupSheet() {
@@ -913,7 +863,6 @@ ingatCadangan();
 cekIngat();
 sinkronPeriodic();
 setInterval(cekIngat, 60000);
-document.getElementById('sheetVersi').textContent = 'Terusin v' + VERSI + ' · buatan Alfin';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
