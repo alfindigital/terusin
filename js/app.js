@@ -88,7 +88,9 @@ function pesan(t, aksi, detik) {
   if (aksi) {
     el.toastB.hidden = false;
     el.toastB.textContent = aksi.label;
-    el.toastB.onclick = function () { aksi.jalan(); el.toast.hidden = true; };
+    /* sembunyikan dulu — aksi boleh langsung manggil pesan() lagi
+       (mis. Batalkan → "Tanda dicabut") tanpa ketutup balik */
+    el.toastB.onclick = function () { el.toast.hidden = true; aksi.jalan(); };
   } else {
     el.toastB.hidden = true;
     el.toastB.onclick = null;
