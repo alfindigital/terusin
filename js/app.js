@@ -13,14 +13,16 @@ var kunciTgl = TerusinCore.kunciTgl, keTgl = TerusinCore.keTgl,
     kini = TerusinCore.kini, hariKe = TerusinCore.hariKe;
 var pulihkan = TerusinCore.pulihkan, beres = TerusinCore.beres,
     runtun = TerusinCore.runtun, rekor = TerusinCore.rekor,
-    total = TerusinCore.total, muter = TerusinCore.muter;
+    total = TerusinCore.total, muter = TerusinCore.muter,
+    statistik = TerusinCore.statistik;
 
 /* ── state ── */
 var S = { habit: [], tema: 'gelap', ingat: null, ingatTerakhir: null, eksporTerakhir: null };
 var buka = {};        // id -> menu kartu kebuka
 var luas = {};        // id -> berapa pekan tambahan dibuka manual
 var pekan = 5;        // batas pekan otomatis, ikut lebar layar
-var undo = null;      // { data, timer }
+var stat = {};        // id -> panel statistik kebuka
+var lpwaktu = 0;      // timestamp long-press terakhir, buat meredam click susulan
 
 function muat() {
   try {
@@ -81,7 +83,7 @@ var el = {
   toastT: $('#toastT'), toastB: $('#toastB'), tpl: $('#tplKartu')
 };
 
-function pesan(t, aksi) {
+function pesan(t, aksi, detik) {
   el.toastT.textContent = t;
   if (aksi) {
     el.toastB.hidden = false;
@@ -93,7 +95,10 @@ function pesan(t, aksi) {
   }
   el.toast.hidden = false;
   clearTimeout(pesan._t);
-  pesan._t = setTimeout(function () { el.toast.hidden = true; }, aksi ? 6000 : 2600);
+  /* detik 0 = nempel sampai diganti/ditutup — buat toast yang butuh aksi
+     (mis. pengingat cadangan) biar nggak hilang sebelum sempat dibaca */
+  var dtk = detik === undefined ? (aksi ? 6000 : 2600) : detik;
+  if (dtk > 0) pesan._t = setTimeout(function () { el.toast.hidden = true; }, dtk);
 }
 
 /* ── gambar ── */
@@ -146,13 +151,27 @@ function kartu(h, urut) {
   n.style.setProperty('--c', c);
   n.style.setProperty('--aksen', c);
   n.dataset.id = h.id;
+  n.id = 'k-' + h.id;                    // target deep-link notifikasi
   n.style.animationDelay = Math.min(urut, 8) * 32 + 'ms';
 
   var p = pemicu(h);
   if (p) n.classList.add('-susun');
   if (giliran(h)) n.classList.add('-giliran');
 
-  n.querySelector('.nama').textContent = h.nama;
+  var namaEl = n.querySelector('.nama');
+  namaEl.textContent = h.nama;
+  /* ketuk nama = tandai hari ini. Aksi paling sering harus yang paling cepat;
+     kotak petak tetap bisa buat nambal hari lampau. */
+  namaEl.setAttribute('role', 'button');
+  namaEl.setAttribute('tabindex', '0');
+  namaEl.title = 'Ketuk untuk tandai hari ini';
+  namaEl.onclick = function () {
+    if (Date.now() - lpwaktu < 650) return;   // ini sisa long-press, bukan ketuk
+    tandai(h.id, kini());
+  };
+  namaEl.onkeydown = function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tandai(h.id, kini()); }
+  };
 
   var r = runtun(h), t = total(h);
   var st = n.querySelector('.kartu__stat');
@@ -183,6 +202,22 @@ function kartu(h, urut) {
 
   petak(n.querySelector('.petak'), h);
 
+  /* panel statistik: dibuka dari menu kartu, jawab "gimana trenku" */
+  if (stat[h.id]) {
+    var sg = statistik(h);
+    var dv = document.createElement('div');
+    dv.className = 'statistik';
+    dv.innerHTML = '<b>' + sg.pct30 + '%</b> dari ' + Math.min(30, sg.umur) + ' hari terakhir · ' +
+      'runtun <b>' + sg.runtun + '</b> · rekor <b>' + sg.rekor + '</b> · total <b>' + sg.total + '</b>';
+    if (sg.umur >= 14 && sg.hariLemah >= 0) {
+      var lemah = document.createElement('p');
+      lemah.innerHTML = 'paling sering bolong hari <b>' + HARI_L[sg.hariLemah] + '</b> (' +
+        sg.lemahIsi + ' dari ' + sg.lemahPeluang + ')';
+      dv.appendChild(lemah);
+    }
+    n.appendChild(dv);
+  }
+
   /* pembuka pekan lama: satu satunya jalan keluar dari buntu backfill */
   if (butuhLebih(h)) {
     var pl = document.createElement('button');
@@ -207,6 +242,13 @@ function kartu(h, urut) {
    lama. Makanya ada tombol perluas. Tanpa itu backfill jauh mustahil. */
 function pekanKartu(h) {
   var tambah = luas[h.id] || 0;
+  /* 'semua': gambar seluruh riwayat sejak mulai, cap 60 pekan */
+  if (tambah === 'semua') {
+    var palingAwal = Object.keys(h.log).sort()[0] || kini();
+    if (h.mulai && h.mulai < palingAwal) palingAwal = h.mulai;
+    var seninAwal = geser(palingAwal, -hariKe(palingAwal));
+    return Math.min(60, Math.ceil((jarak(seninAwal, kini()) + 1) / 7));
+  }
   var dasar = 1;
   var ks = Object.keys(h.log);
   if (ks.length) {
@@ -297,7 +339,9 @@ function isiMenu(kotak, h) {
   var I = {
     edit: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M14 3l3 3-9 9-4 1 1-4z"/></svg>',
     arsip: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14v3H3zM4.5 9v8h11V9M8 12h4"/></svg>',
-    buang: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14M7.5 5.5V3h5v2.5M5 5.5l1 11h8l1-11"/></svg>'
+    buang: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14M7.5 5.5V3h5v2.5M5 5.5l1 11h8l1-11"/></svg>',
+    grafik: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 16v-6M10 16V4M16 16V9"/></svg>',
+    kalender: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12" rx="2"/><path d="M3 8.5h14M7 3v3M13 3v3"/></svg>'
   };
 
   tombol('Ganti nama', I.edit, '', function () {
@@ -350,6 +394,69 @@ function isiMenu(kotak, h) {
   };
   wrap.appendChild(sel);
   kotak.appendChild(wrap);
+
+  /* pengingat per habit. Kosong = ikut jam global di Pengaturan. */
+  var wi = document.createElement('div');
+  wi.className = 'susunPilih';
+  var li = document.createElement('label');
+  li.className = 'susunPilih__label';
+  li.textContent = 'Ingatkan jam';
+  var si = document.createElement('select');
+  si.setAttribute('aria-label', 'Ingatkan ' + h.nama + ' jam berapa');
+  [['', 'Ikuti pengaturan global'], ['07:00', '07.00'], ['12:00', '12.00'], ['20:00', '20.00']]
+    .forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o[0]; op.textContent = o[1];
+      if ((h.ingat || '') === o[0]) op.selected = true;
+      si.appendChild(op);
+    });
+  si.onchange = function () {
+    var v = si.value || null;
+    var pasang = function () { h.ingat = v; simpan(); gambar(); sinkronPeriodic(); };
+    if (v && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(function (p) {
+        if (p === 'granted') pasang();
+        else pesan('Izin notifikasi tidak diberikan');
+      });
+      return;
+    }
+    pasang();
+  };
+  wi.appendChild(li); wi.appendChild(si);
+  kotak.appendChild(wi);
+
+  /* tanggal mulai: habit yang dibuat belakangan tapi sudah jalan lama bisa
+     jujur soal kapan dia mulai — petak 'semua' ikut acuan ini */
+  var wm = document.createElement('div');
+  wm.className = 'susunPilih';
+  var lm = document.createElement('label');
+  lm.className = 'susunPilih__label';
+  lm.textContent = 'Mulai dari tanggal';
+  var im = document.createElement('input');
+  im.type = 'date';
+  im.value = h.mulai || kini();
+  im.max = kini();
+  im.setAttribute('aria-label', 'Tanggal mulai ' + h.nama);
+  im.onchange = function () {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(im.value) || jarak(im.value, kini()) < 0) {
+      im.value = h.mulai;   // tanggal rusak/masa depan: balik ke yang lama
+      return;
+    }
+    h.mulai = im.value;
+    simpan(); gambar();
+  };
+  wm.appendChild(lm); wm.appendChild(im);
+  kotak.appendChild(wm);
+
+  tombol('Statistik', I.grafik, stat[h.id] ? '-aktif' : '', function () {
+    stat[h.id] = !stat[h.id];
+    gambar();
+  });
+
+  tombol(luas[h.id] === 'semua' ? 'Ringkas petak' : 'Semua riwayat', I.kalender, '', function () {
+    luas[h.id] = luas[h.id] === 'semua' ? 0 : 'semua';
+    gambar();
+  });
 
   tombol('Arsipkan', I.arsip, '', function () {
     h.arsip = true;
@@ -441,10 +548,12 @@ function ingatCadangan() {
   if (!adaData) return;
   var n = S.eksporTerakhir ? jarak(S.eksporTerakhir, kini()) : Infinity;
   if (n <= 7) return;
+  /* detik 0: toast ini nempel sampai user bertindak — ini cadangan satu
+     satunya, jangan hilang dalam 6 detik */
   pesan(n === Infinity ? 'Datamu belum pernah dicadangkan'
         : 'Terakhir dicadangkan ' + n + ' hari lalu', {
     label: 'Simpan ke file', jalan: ekspor
-  });
+  }, 0);
 }
 
 /* ── pengingat harian ── */
@@ -489,18 +598,36 @@ function notif(judul, opsi) {
   }
 }
 
-function cekIngat() {
-  if (!S.ingat || !('Notification' in window) || Notification.permission !== 'granted') return;
-  var k = kini();
-  if (S.ingatTerakhir === k) return;
+function jamIni() {
   var d = new Date();
-  var hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  if (hm < S.ingat) return;
-  var sisa = aktif().filter(function (h) { return !beres(h, k); }).length;
-  if (!sisa) return;
-  S.ingatTerakhir = k;
-  simpan();
-  notif('Terusin', { body: sisa + ' kebiasaan belum ditandai hari ini. Jangan sampai putus.', tag: 'ingatkan' });
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function cekIngat() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var k = kini(), hm = jamIni(), ganti = false;
+
+  /* jam global: satu notif buat semua yang belum ditandai */
+  var blm = aktif().filter(function (h) { return !beres(h, k); });
+  if (S.ingat && S.ingatTerakhir !== k && hm >= S.ingat && blm.length) {
+    S.ingatTerakhir = k; ganti = true;
+    notif('Terusin', {
+      body: blm.length + ' kebiasaan belum ditandai hari ini. Jangan sampai putus.',
+      tag: 'ingatkan', data: { habit: blm[0].id }
+    });
+  }
+
+  /* jam per habit: jadwalnya sendiri, dedupnya sendiri, nggak ikut global */
+  blm.forEach(function (h) {
+    if (!h.ingat || h.ingatTerakhir === k || hm < h.ingat) return;
+    h.ingatTerakhir = k; ganti = true;
+    notif('Terusin', {
+      body: '"' + h.nama + '" belum ditandai hari ini.',
+      tag: 'ingat-' + h.id, data: { habit: h.id }
+    });
+  });
+
+  if (ganti) simpan();
 }
 
 /* Periodic Background Sync: satu-satunya jalan notifikasi saat app TERTUTUP
@@ -510,7 +637,9 @@ function sinkronPeriodic() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.ready.then(function (r) {
     if (!('periodicSync' in r)) return;
-    if (S.ingat) r.periodicSync.register('ingatkan', { minInterval: 24 * 60 * 60 * 1000 }).catch(function () {});
+    /* periodicSync perlu hidup kalau ADA jam manapun: global atau per habit */
+    var perlu = S.ingat || S.habit.some(function (h) { return !!h.ingat; });
+    if (perlu) r.periodicSync.register('ingatkan', { minInterval: 24 * 60 * 60 * 1000 }).catch(function () {});
     else r.periodicSync.unregister('ingatkan').catch(function () {});
   }).catch(function () {});
 }
@@ -542,6 +671,7 @@ function tambah(nama) {
   el.iNama.value = '';
   simpan();
   gambar();
+  pesan('Ditambah — ketuk kotaknya buat tandai hari ini');
 }
 
 function tandai(id, t) {
@@ -558,14 +688,19 @@ function tandai(id, t) {
   var rBaru = runtun(h);
   gambar();
 
-  /* animasi cuma di sel yang baru diisi, jangan seluruh petak */
   if (!adaSblm) {
+    /* animasi cuma di sel yang baru diisi, jangan seluruh petak */
     var s = el.daftar.querySelector('.kartu[data-id="' + id + '"] .sel[data-t="' + t + '"]');
     if (s) s.classList.add('-baru');
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
     if (rBaru === 7 || rBaru === 21 || rBaru === 30 || rBaru === 66 || rBaru === 100) {
       pesan(rBaru + ' hari nggak putus. Jangan disetop sekarang.');
+    } else {
+      /* salah ketuk itu frustrasi nomor satu di tracker: kasih jalan balik */
+      pesan('Ditandai', { label: 'Batalkan', jalan: function () { tandai(id, t); } });
     }
-    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  } else {
+    pesan('Tanda dicabut', { label: 'Tandai lagi', jalan: function () { tandai(id, t); } });
   }
 }
 
@@ -768,6 +903,30 @@ function pasang() {
     if (!p || e.button) return;
     mulaiGeser(e, p.closest('.kartu'));
   });
+
+  /* long-press 550ms di area kosong kartu = buka menu, selain lewat ⋮.
+     Semua button/select/input dikecualikan — mereka punya aksi sendiri. */
+  var lpT = null, lpX = 0, lpY = 0;
+  el.daftar.addEventListener('pointerdown', function (e) {
+    var k = e.target.closest('.kartu');
+    if (!k || e.target.closest('button, a, select, input, label')) return;
+    lpX = e.clientX; lpY = e.clientY;
+    lpT = setTimeout(function () {
+      lpT = null;
+      lpwaktu = Date.now();          // meredam click yang nyusul di .nama
+      buka[k.dataset.id] = true;
+      gambar();
+    }, 550);
+  });
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    document.addEventListener(ev, function () { clearTimeout(lpT); lpT = null; });
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!lpT) return;
+    if (Math.abs(e.clientX - lpX) + Math.abs(e.clientY - lpY) > 10) {
+      clearTimeout(lpT); lpT = null;
+    }
+  });
   document.addEventListener('pointermove', jalanGeser);
   document.addEventListener('pointerup', selesaiGeser);
   document.addEventListener('pointercancel', selesaiGeser);
@@ -853,6 +1012,15 @@ function pasang() {
   });
 }
 
+/* Notifikasi diketuk → fokus kartu itu: scroll + kedip, jangan cuma buka app */
+function fokusHabit(id) {
+  var n = document.getElementById('k-' + id);
+  if (!n) return;
+  n.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  n.classList.add('-sorot');
+  setTimeout(function () { n.classList.remove('-sorot'); }, 1500);
+}
+
 /* ── jalan ── */
 muat();
 hitungPekan();
@@ -865,9 +1033,17 @@ sinkronPeriodic();
 setInterval(cekIngat, 60000);
 
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', function (e) {
+    if (e.data && e.data.tipe === 'fokusHabit' && e.data.habit) fokusHabit(e.data.habit);
+  });
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
+}
+
+/* datang lewat tautan notifikasi: '#k-<id>' */
+if (location.hash.indexOf('#k-') === 0) {
+  window.addEventListener('load', function () { fokusHabit(location.hash.slice(3)); });
 }
 
 })();

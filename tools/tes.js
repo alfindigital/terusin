@@ -134,6 +134,60 @@ tes('pulihkan: mulai = log paling awal, kalau kosong = hari ini', () => {
   assert.strictEqual(out[0].mulai, '2026-01-02');
   assert.strictEqual(out[1].mulai, C.kini());
 });
+tes('pulihkan: ingat HH:MM ketat, yang rusak jadi null', () => {
+  const out = C.pulihkan([
+    { nama: 'a', ingat: '07:00', ingatTerakhir: '2026-09-25' },
+    { nama: 'b', ingat: '25:99' },
+    { nama: 'c', ingat: 'pagi' },
+    { nama: 'd', ingat: '7:00' }
+  ]);
+  assert.strictEqual(out[0].ingat, '07:00');
+  assert.strictEqual(out[0].ingatTerakhir, '2026-09-25');
+  assert.strictEqual(out[1].ingat, null);
+  assert.strictEqual(out[2].ingat, null);
+  assert.strictEqual(out[3].ingat, null);
+});
+
+/* ── statistik ── */
+tes('statistik: pct30 dihitung sejak mulai — 8/10 hari = 80%', () => {
+  const h = habitKosong(logBerurut(0, 8));
+  h.mulai = C.geser(C.kini(), -9);             // umur 10 hari
+  const s = C.statistik(h);
+  assert.strictEqual(s.pct30, 80);
+  assert.strictEqual(s.umur, 10);
+  assert.strictEqual(s.total, 8);
+  assert.strictEqual(s.runtun, 8);
+  assert.strictEqual(s.rekor, 8);
+});
+tes('statistik: habit baru 1 hari kosong = 0%, bukan NaN', () => {
+  const h = habitKosong({});
+  h.mulai = C.kini();
+  const s = C.statistik(h);
+  assert.strictEqual(s.pct30, 0);
+  assert.strictEqual(s.umur, 1);
+});
+tes('statistik: hariLemah = hari dengan rasio isi/peluang terendah', () => {
+  const k = C.kini();
+  const skip = C.hariKe(C.geser(k, -1));       // bolongkan satu hari-dalam-pekan tertentu
+  const log = {};
+  for (let i = 0; i < 14; i++) {
+    const t = C.geser(k, -i);
+    if (C.hariKe(t) !== skip) log[t] = 1;
+  }
+  const h = habitKosong(log);
+  h.mulai = C.geser(k, -13);
+  const s = C.statistik(h);
+  assert.strictEqual(s.hariLemah, skip);
+  assert.strictEqual(s.lemahIsi, 0);
+});
+tes('statistik: mulai rusak/masa depan jatuh ke hari ini, nggak meledak', () => {
+  const a = C.statistik(habitKosong({}));
+  a.mulai = 'bukan tanggal';
+  const b = C.statistik({ ...habitKosong({}), mulai: 'bukan tanggal' });
+  assert.strictEqual(b.umur, 1);
+  const c = C.statistik({ ...habitKosong({}), mulai: C.geser(C.kini(), 5) });
+  assert.strictEqual(c.umur, 1);
+});
 
 console.log(`\n${lulus} tes lulus, ${gagal} gagal`);
 process.exitCode = gagal ? 1 : 0;
